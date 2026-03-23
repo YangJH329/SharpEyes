@@ -1,57 +1,79 @@
 import cv2
 from ultralytics import YOLO
-# import os # 파일 존재 여부 확인하느라 쓴 모듈, 필요하면 주석 해제
+# import os # 파일 존재 여부 확인용
+from src.utils.math_utils import calculate_angle
 
 def run_pose_estimation(video_path=0):
     # # 파일이 진짜 있는지 검사하는 코드 추가 # 파일 경로 찾기용
     # if isinstance(video_path, str) and not os.path.exists(video_path):
     #     print(f" 에러: '{video_path}' 파일을 찾을 수 없습니다!")
     #     print(f"현재 위치: {os.getcwd()}")
-    #     return
-
-    # 1. 모델 로드 (가장 가벼운 'yolov8n-pose' 모델 사용)
-    # 처음 실행 시 모델 파일(.pt)을 자동으로 다운로드합니다.
+    # 1. 모델 로드
     model = YOLO('yolov8n-pose.pt')
 
-    # 2. 영상 소스 불러오기 (0은 웹캠, 파일 경로를 넣으면 비디오 파일)
+    # 2. 영상 소스 불러오기
     cap = cv2.VideoCapture(video_path)
 
     print("프로그램 시작: ESC를 누르면 종료됩니다.")
+
+    # --- [카운팅 변수 초기화] ---
+    counter = 0    # 스쿼트 개수
+    stage = None   # 현재 상태 ('down': 내려감, 'up': 올라옴)
 
     while cap.isOpened():
         success, frame = cap.read()
         if not success:
             break
 
-        # 3. 모델로 포즈 추론 (stream=True는 실시간 처리에 최적화)
+        # 3. 모델로 포즈 추론
         results = model(frame, stream=True)
 
         for r in results:
+            # 기본 뼈대 그리기
             annotated_frame = r.plot()
 
-            # 관절 데이터가 있는지 확인
+            # 관절 데이터 추출 및 카운팅 로직
             if r.keypoints is not None and len(r.keypoints.xy) > 0:
-                # 0번 사람의 모든 관절 좌표 가져오기
                 keypoints = r.keypoints.xy[0] 
 
-                # 오른쪽 무릎(인덱스 14) 좌표 추출
-                # keypoints[14]는 [x, y] 형태의 리스트입니다.
-                if len(keypoints) > 14:
-                    rk_x, rk_y = keypoints[14]
+                # 인덱스 : 골반 (12), 무릎 (14), 발목 (16)
+                if len(keypoints) > 16:
+                    hip = keypoints[12].tolist()   
+                    knee = keypoints[14].tolist()
+                    ankle = keypoints[16].tolist()
 
-                    # 좌표가 0, 0이 아닐 때만(인식되었을 때만) 화면에 표시
-                    if rk_x > 0 and rk_y > 0:
-                        text = f"Right Knee: ({int(rk_x)}, {int(rk_y)})"
+                    if all(p[0] > 0 for p in [hip, knee, ankle]):
+                        # 각도 계산
+                        angle = calculate_angle(hip, knee, ankle)
                         
-                        # 화면 좌측 상단에 텍스트 그리기 (OpenCV 함수)
-                        cv2.putText(annotated_frame, text, (30, 50), 
-                                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                        # --- [카운팅 알고리즘 적용] ---
+                        # 1. 내려가는 동작 인식 (기준: 90도 미만)
+                        if angle < 90:
+                            stage = "down"
                         
-                        # 터미널에도 실시간 출력
-                        print(f"오른쪽 무릎 위치 -> X: {rk_x:.1f}, Y: {rk_y:.1f}")
+                        # 2. 올라오는 동작 인식 및 카운트 (기준: 160도 이상이고 이전에 내려갔어야 함)
+                        if angle > 160 and stage == "down":
+                            stage = "up"
+                            counter += 1
+                            print(f"스쿼트 성공! 현재 개수: {counter}")
+                        # ----------------------------
 
-        # 화면에 출력
-        cv2.imshow("SharpEyes - Pose Test", annotated_frame)
+                        # 텍스트 시각화 (화면 표시)
+                        # 1. 실시간 무릎 각도 (노란색)
+                        cv2.putText(annotated_frame, f"Knee Angle: {int(angle)}deg", 
+                                    (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
+                        
+                        # 2. 스쿼트 개수 (초록색, 크게 표시)
+                        cv2.putText(annotated_frame, f"COUNT: {counter}", 
+                                    (30, 60), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 0), 3)
+
+                        # 3. 상태 피드백 (깊게 내려갔을 때 표시)
+                        if stage == "down":
+                            cv2.putText(annotated_frame, "DEPTH OK!", (30, 150), 
+                                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
+            # 화면에 출력 (루프 안에서 호출되어야 실시간으로 보임)
+            cv2.imshow("SharpEyes - Squat Counter", annotated_frame)
 
         # 'ESC' 키를 누르면 종료
         if cv2.waitKey(1) & 0xFF == 27:
@@ -61,7 +83,6 @@ def run_pose_estimation(video_path=0):
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    # 테스트하고 싶은 영상 파일 경로를 넣으세요. 
-    # 웹캠으로 하려면 0을 넣으면 됩니다.
-    video_path = "data/raw/test.mp4"  # 웹캠 사용
+    # 데이터 폴더 내 영상 경로
+    video_path = "data/raw/test.mp4" 
     run_pose_estimation(video_path)
