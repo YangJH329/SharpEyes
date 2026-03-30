@@ -1,6 +1,6 @@
 # 🦅 SharpEyes: Intelligent Home-Training Safety System
 
-**SharpEyes**는 YOLOv8 기반의 **Pose Estimation(자세 추정)**과 **Instance Segmentation(영역 분할)** 기술을 결합하여, 사용자의 운동 자세를 교정함과 동시에 지정된 안전 구역 이탈을 실시간으로 감지하는 지능형 홈 트레이닝 보조 시스템입니다.
+**SharpEyes**는 YOLOv8 기반의 **Pose Estimation(자세 추정)** 과 **Instance Segmentation(영역 분할)** 기술을 결합하여, 사용자의 운동 자세를 교정함과 동시에 지정된 안전 구역 이탈을 실시간으로 감지하는 지능형 홈 트레이닝 보조 시스템입니다.
 
 ---
 
