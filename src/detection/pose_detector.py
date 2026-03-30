@@ -84,5 +84,5 @@ def run_pose_estimation(video_path=0):
 
 if __name__ == "__main__":
     # 데이터 폴더 내 영상 경로
-    video_path = "data/raw/test.mp4" 
+    video_path = "data/raw/squat.mp4" 
     run_pose_estimation(video_path)
