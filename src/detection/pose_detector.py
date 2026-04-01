@@ -56,7 +56,7 @@ def run_pose_estimation(video_path=0):
                         # 1. 하강 판정 (UP -> DOWN)
                         # 측면(각도) 혹은 정면(거리) 중 하나라도 만족하면 상태 변경
                         # 초기에는 '대기' 상태에서 시작, UP 상태에서만 DOWN으로 넘어갈 수 있도록 설계
-                        if stage == "up" or stage == "wait":  
+                        if stage == "up" or stage == "ready":  
                             if (angle < DOWN_ANGLE_LIMIT) or (vertical_dist < DOWN_DIST_LIMIT):
                                 stage = "down"
                                 print(">>> DOWN 감지")
