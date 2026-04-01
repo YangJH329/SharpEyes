@@ -27,7 +27,7 @@
 단순 각도 측정이 아닌 **상태 머신(READY - DOWN - UP)** 구조를 설계하여 중복 카운팅 노이즈를 제거했습니다.
 * **Multi-Modal Analysis**: 측면(각도 기반)과 정면(수직 거리 기반) 데이터를 결합한 하이브리드 판정 알고리즘을 적용하여 다양한 카메라 각도에 대응합니다.
 
-### 2. 구역 이탈 판정 (Spatial Boundary Detection)
+### 2. 구역 이탈 판정 (Spatial Boundary Detection) (구현 예정)
 * **Segmentation Mask**: YOLOv8-seg 모델이 바닥의 운동 매트 영역을 바이너리 마스크(Binary Mask)로 실시간 생성합니다.
 * **Coordinate Mapping**: 추출된 사용자의 발목(Ankle) 및 발(Foot) 좌표가 해당 마스크 영역(픽셀 값 1) 내부에 존재하는지 기하학적으로 연산합니다.
 * **Real-time Feedback**: 이탈 감지 시 시각적/청각적 피드백을 통해 사용자의 위치 수정을 유도합니다.
