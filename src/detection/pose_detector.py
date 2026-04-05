@@ -106,4 +106,4 @@ def run_pose_estimation(video_path=0, mode="squat"):
 
 if __name__ == "__main__":
     # "squat" 또는 "pullup"으로 테스트해보세요.
-    run_pose_estimation(video_path="data/raw/squat.mp4", mode="squat")
+    run_pose_estimation(video_path="data/raw/pullUp.mp4", mode="pullup")
