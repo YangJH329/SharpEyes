@@ -3,6 +3,14 @@ from ultralytics import YOLO
 from src.utils.math_utils import calculate_angle
 
 def run_pose_estimation(video_path=0, mode="squat"):
+    """
+운동 자세 분석 및 카운팅을 위한 포즈 추정 모듈입니다.
+- 모델: YOLOv8n-pose (가벼운 버전으로 실시간 처리에 적합)
+- 입력 
+    - video_path: 웹캠(0) 또는 비디오 파일 경로
+    - mode: "squat" 또는 "pullup"  (운동 종류에 따른 관절 및 임계값 설정)
+    """
+
     # 1. 모델 로드
     model = YOLO('yolov8n-pose.pt')
 
