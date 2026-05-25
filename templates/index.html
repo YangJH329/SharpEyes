@@ -10,14 +10,58 @@
             text-align: center; 
             background-color: #121212; 
             color: white; 
+            margin: 0; padding: 0;
         }
-        .container { margin-top: 50px; }
+        .container { margin-top: 30px; }
+        .video-container {
+            margin: 20px auto; max-width: 800px;
+            border: 4px solid #333; border-radius: 10px;
+            overflow: hidden; background-color: #000;
+        }
+        .video-stream { width: 100%; height: auto; display: block; }
+        
+        /* 버튼 스타일 */
+        .btn-stop {
+            margin-top: 15px;
+            padding: 12px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            background-color: #e50914; /* 넷플릭스 레드 스타일 */
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-stop:hover { background-color: #b80710; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1> SharpEyes 실시간 피드백</h1>
-        <p>FastAPI 서버가 정상적으로 구동 중입니다.</p>
+        <h1>👁️ SharpEyes 실시간 피드백 시스템</h1>
+        <p>AI가 하이브리드 방식으로 자세를 분석하고 카운팅합니다.</p>
+        
+        <div class="video-container">
+            <img src="/video_feed" id="stream-img" class="video-stream" alt="AI 운동 스트리밍 채널">
+        </div>
+
+        <button class="btn-stop" onclick="stopExercise()">운동 시연 종료</button>
     </div>
+
+    <script>
+        function stopExercise() {
+            // 백엔드의 /stop 엔드포인트 호출
+            fetch('/stop', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if(data.status === 'stopped') {
+                    alert('운동 분석이 성공적으로 종료되었습니다.');
+                    // 웹 브라우저 화면의 이미지 스트리밍도 정지 이미지로 변경
+                    document.getElementById('stream-img').src = "";
+                }
+            })
+            .catch(err => console.error('에러 발생:', err));
+        }
+    </script>
 </body>
 </html>
