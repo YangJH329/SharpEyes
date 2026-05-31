@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SharpEyes AI Dashboard</title>
+    <style>
+        /* 기본 설정 및 스크롤 원천 차단 */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100vh;
+            background-color: #0f0f12; /* 조금 더 깊은 다크 톤 */
+            color: #ffffff;
+            font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        /* 메인 레이아웃: 좌우 분할 구조 (Flex박스) */
+        .dashboard-wrapper {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        /* ==========================================
+           [좌측 영역] 순수 비전 스트리밍 존 (70%)
+           ========================================== */
+        .video-zone {
+            flex: 7; /* 70% 비율 */
+            height: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* 타이틀과 하단 버튼 배치용 */
+            background-color: #13131a;
+        }
+
+        .video-header h1 {
+            margin: 0 0 5px 0;
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        .video-header p {
+            margin: 0;
+            color: #71717a;
+            font-size: 14px;
+        }
+
+        /* 영상이 담기는 실제 가물 상자 */
+        .video-container {
+            flex: 1;
+            margin: 20px 0;
+            background-color: #000000;
+            border: 2px solid #27272a;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .video-stream {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* 영상 비율 완벽 보존 */
+            display: block;
+
+            /* [성능 최적화 핵심 속성] */
+            
+            image-rendering : -webkit-optimize-contrast; /* 브라우저의 과도한 픽셀 보간 연산을 차단하여 렌더링 속도 향상 */
+            image-rendering: crisp-edges;
+            transform: translateZ(0); /* 브라우저에게 이 이미지를 GPU(그래픽카드)로 연산하라고 강제 명령 */
+            backface-visibility: hidden;
+
+
+        }
+
+        .placeholder-text {
+            font-size: 22px;
+            color: #3f3f46;
+            font-weight: 700;
+            letter-spacing: 1px;
+            display: none;
+        }
+
+        /* 시스템 제어 버튼 영역 */
+        .control-area {
+            height: 60px;
+            display: flex;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 14px 40px;
+            font-size: 16px;
+            font-weight: 700;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-running { background-color: #f59e0b; } /* 주황색: 누르면 정지됨 */
+        .btn-stopped { background-color: #10b981; } /* 초록색: 누르면 재개됨 */
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); }
+
+
+        /* ==========================================
+           [우측 영역] 실시간 데이터 보드 존 (30%)
+           ========================================== */
+        .data-sidebar {
+            flex: 3; /* 30% 비율 */
+            height: 100%;
+            background-color: #1c1c24;
+            border-left: 2px solid #27272a;
+            padding: 30px 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .sidebar-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #a1a1aa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            border-left: 4px solid #f59e0b;
+            padding-left: 10px;
+        }
+
+        /* 정보 표시용 공통 카드 UI */
+        .info-card {
+            background-color: #13131a;
+            border: 1px solid #27272a;
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .card-label {
+            font-size: 13px;
+            color: #71717a;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        /* 대형 카운트 보드 스타일 */
+        .count-card {
+            align-items: center;
+            padding: 30px 20px;
+            background: linear-gradient(145deg, #13131a, #1a1a24);
+            border: 1px solid #3f3f46;
+        }
+        .count-value {
+            font-size: 84px; /* 멀리서도 잘 보이는 거대 폰트 */
+            font-weight: 900;
+            color: #f59e0b;
+            line-height: 1;
+            margin-top: 10px;
+            font-family: monospace, sans-serif; /* 숫자 정렬 고정용 */
+        }
+
+        /* 상태 및 피드백 텍스트 스타일 */
+        .status-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #38bdf8; /* 밝은 푸른빛 */
+            margin-top: 5px;
+        }
+
+        .feedback-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #10b981; /* 기본 피드백 초록색 */
+            margin-top: 5px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-wrapper">
+        
+        <div class="video-zone">
+            <div class="video-header">
+                <h1>SharpEyes 실시간 피드백 시스템</h1>
+                <p>컴퓨터 비전 기술을 활용한 독립형 하이브리드 모션 분석 엔진</p>
+            </div>
+            
+            <div class="video-container">
+                <img src="/video_feed" id="stream-img" class="video-stream" alt="AI 모션 분석 피드 Channel">
+                <div id="placeholder" class="placeholder-text">CAMERA OFF</div>
+            </div>
+
+            <div class="control-area">
+                <button id="toggle-btn" class="btn btn-running" onclick="toggleStream()">PAUSE SYSTEM</button>
+            </div>
+        </div>
+
+        <div class="data-sidebar">
+            <div class="sidebar-title">Live Analysis</div>
+            
+            <div class="info-card count-card">
+                <div class="card-label">TOTAL COUNT</div>
+                <div id="ui-count" class="count-value">0</div>
+            </div>
+
+            <div class="info-card">
+                <div class="card-label">CURRENT STAGE</div>
+                <div id="ui-stage" class="status-value">READY</div>
+            </div>
+
+            <div class="info-card">
+                <div class="card-label">REAL-TIME FEEDBACK</div>
+                <div id="ui-feedback" class="feedback-value">START EXERCISE</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+    function toggleStream() {
+        fetch('/toggle', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            const img = document.getElementById('stream-img');
+            const placeholder = document.getElementById('placeholder');
+            const btn = document.getElementById('toggle-btn');
+            
+            if (data.status === 'stopped') {
+                img.src = "";
+                img.style.display = "none";
+                placeholder.style.display = "block";
+                
+                btn.innerText = "RESUME SYSTEM";
+                btn.className = "btn btn-stopped";
+            } else {
+                img.src = "/video_feed?t=" + new Date().getTime();
+                img.style.display = "block";
+                placeholder.style.display = "none";
+                
+                btn.innerText = "PAUSE SYSTEM";
+                btn.className = "btn btn-running";
+            }
+        })
+        .catch(err => console.error(err));
+    }
+    </script>
+</body>
+</html>

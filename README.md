@@ -13,12 +13,12 @@
 ---
 
 ## 🛠 기술 스택 (Tech Stack)
-* **AI Model**: Ultralytics YOLOv8 (Pose & Segmentation)
+* **AI Model**: Ultralytics YOLOv8 (Real-time Human Pose Estimation, Segmentation(추가 예정))
 * **Computer Vision**: OpenCV, NumPy
-* **Language**: Python 3.11+
+* **Language**: Python 3.12+
 * **Version Control**: Git / GitHub (Feature Branch Strategy)
-* **Environment**: Virtual Environment (venv)
-
+* **Environment**: Python Virtual Environment (venv)
+* **Framework**: FastAPI
 ---
 
 ##  핵심 로직 (Core Logic)
@@ -41,6 +41,8 @@ SharpEyes/
 ├── src/
 │   ├── detection/      # Pose & Segmentation 추론 및 판정 로직
 │   └── utils/          # 각도 계산 및 기하학 연산 유틸리티
+├── templates/          # HTML 템플릿
 ├── venv/               # 가상환경
 ├── requirements.txt    # 의존성 패키지 목록
 └── README.md           # 프로젝트 정의서
+```
