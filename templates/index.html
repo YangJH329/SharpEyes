@@ -20,6 +20,7 @@
         }
         .video-header h1 { margin: 0 0 5px 0; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
         .video-header p { margin: 0; color: #71717a; font-size: 14px; }
+        
         .video-container {
             flex: 1; margin: 20px 0; background-color: #000000;
             border: 2px solid #27272a; border-radius: 12px; overflow: hidden;
@@ -30,35 +31,79 @@
             image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;
             transform: translateZ(0); backface-visibility: hidden;
         }
-        .placeholder-text { font-size: 22px; color: #3f3f46; font-weight: 700; letter-spacing: 1px; display: none; }
-        .control-area { height: 60px; display: flex; align-items: center; }
+        .placeholder-text { font-size: 22px; color: #3f3f46; font-weight: 700; display: none; }
+
+        /* 하단 버튼바 시스템 */
+        .control-area { height: 60px; display: flex; align-items: center; gap: 15px; position: relative; }
         .btn {
-            padding: 14px 40px; font-size: 16px; font-weight: 700; color: white;
+            padding: 14px 30px; font-size: 15px; font-weight: 700; color: white;
             border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s ease-in-out; letter-spacing: 0.5px;
+            box-sizing: border-box;
         }
-        .btn-running { background-color: #f59e0b; } 
-        .btn-stopped { background-color: #10b981; } 
-        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        
+        .dropdown-wrapper { position: relative; }
+        .btn-mode { background-color: #3f3f46; border: 1px solid #52525b; }
+        .dropdown-menu {
+            position: absolute; bottom: 70px; left: 0;
+            background-color: #1c1c24; border: 1px solid #3f3f46; border-radius: 8px;
+            width: 160px; display: none; flex-direction: column; overflow: hidden; z-index: 10;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        }
+        .dropdown-item { padding: 12px 16px; font-size: 14px; color: #e4e4e7; cursor: pointer; text-align: left; transition: background 0.2s; }
+        .dropdown-item:hover { background-color: #27272a; color: #f59e0b; }
+
+        .btn-running { background-color: #f59e0b; min-width: 160px; } 
+        .btn-stopped { background-color: #10b981; min-width: 160px; } 
+        .btn-end { background-color: #ef4444; opacity: 0.6; cursor: not-allowed; }
+        .btn:hover:not(.btn-end) { opacity: 0.9; transform: translateY(-1px); }
 
         /* [우측] 데이터 사이드바 영역 (30%) */
         .data-sidebar {
             flex: 3; height: 100%; background-color: #1c1c24;
             border-left: 2px solid #27272a; padding: 30px 20px; box-sizing: border-box;
-            display: flex; flex-direction: column; gap: 20px;
+            display: flex; flex-direction: column; justify-content: space-between;
         }
+        .sidebar-main-content { display: flex; flex-direction: column; gap: 20px; width: 100%; }
+        
+        /* 유동적 테마 변경을 위한 빌드업 테두리 */
         .sidebar-title {
             font-size: 18px; font-weight: 700; color: #a1a1aa; text-transform: uppercase;
             letter-spacing: 1px; margin-bottom: 10px; border-left: 4px solid #f59e0b; padding-left: 10px;
+            transition: border-color 0.3s ease;
         }
         .info-card {
             background-color: #13131a; border: 1px solid #27272a; border-radius: 10px;
-            padding: 20px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease;
+            padding: 20px; display: flex; flex-direction: column; justify-content: center;
         }
         .card-label { font-size: 13px; color: #71717a; font-weight: 600; margin-bottom: 5px; }
-        .count-card { align-items: center; padding: 30px 20px; background: linear-gradient(145deg, #13131a, #1a1a24); border: 1px solid #3f3f46; }
-        .count-value { font-size: 84px; font-weight: 900; color: #f59e0b; line-height: 1; margin-top: 10px; font-family: monospace, sans-serif; }
+        .count-card { align-items: center; padding: 30px 20px; background: linear-gradient(145deg, #13131a, #1a1a24); border: 1px solid #3f3f46; transition: border-color 0.3s ease; }
+        
+        /* 모드별 스위칭용 실시간 메인 컬러 텍스트 */
+        .count-value { font-size: 84px; font-weight: 900; color: #f59e0b; line-height: 1; margin-top: 10px; font-family: monospace, sans-serif; transition: color 0.3s ease; }
         .status-value { font-size: 24px; font-weight: 700; color: #38bdf8; margin-top: 5px; }
         .feedback-value { font-size: 20px; font-weight: 700; color: #10b981; margin-top: 5px; line-height: 1.4; }
+
+        /* ==========================================
+         새로 추가된 우측 하단 상태 인디케이터 (Status Indicator)
+           ========================================== */
+        .status-indicator-zone {
+            border-top: 1px solid #27272a;
+            padding-top: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .indicator-label { font-size: 12px; color: #71717a; font-weight: 700; letter-spacing: 0.5px; }
+        
+        /* 상태 배지 기본 스타일 */
+        .mode-badge {
+            padding: 6px 14px; font-size: 12px; font-weight: 800; border-radius: 20px;
+            letter-spacing: 0.5px; text-transform: uppercase; transition: all 0.3s ease;
+        }
+        /* 스쿼트 상태 (주황 테마) */
+        .theme-squat { background-color: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
+        /* 풀업 상태 (파랑 테마) */
+        .theme-pullup { background-color: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
     </style>
 </head>
 <body>
@@ -73,32 +118,46 @@
                 <img src="/video_feed" id="stream-img" class="video-stream" alt="AI 모션 분석 피드 Channel">
                 <div id="placeholder" class="placeholder-text">CAMERA OFF</div>
             </div>
+
             <div class="control-area">
+                <div class="dropdown-wrapper">
+                    <button class="btn btn-mode" onclick="toggleDropdown()">MODE SELECT</button>
+                    <div id="mode-menu" class="dropdown-menu">
+                        <div class="dropdown-item" onclick="changeMode('squat')">SQUAT</div>
+                        <div class="dropdown-item" onclick="changeMode('pullup')">PULL-UP</div>
+                    </div>
+                </div>
                 <button id="toggle-btn" class="btn btn-running" onclick="toggleStream()">PAUSE SYSTEM</button>
+                <button class="btn btn-end">END OF EXERCISE</button>
             </div>
         </div>
 
         <div class="data-sidebar">
-            <div class="sidebar-title">Live Analysis</div>
-            <div class="info-card count-card">
-                <div class="card-label">TOTAL COUNT</div>
-                <div id="ui-count" class="count-value">0</div>
+            <div class="sidebar-main-content">
+                <div id="sidebar-title-line" class="sidebar-title">Live Analysis</div>
+                <div id="ui-count-card" class="info-card count-card">
+                    <div class="card-label">TOTAL COUNT</div>
+                    <div id="ui-count" class="count-value">0</div>
+                </div>
+                <div class="info-card">
+                    <div class="card-label">CURRENT STAGE</div>
+                    <div id="ui-stage" class="status-value">READY</div>
+                </div>
+                <div class="info-card">
+                    <div class="card-label">REAL-TIME FEEDBACK</div>
+                    <div id="ui-feedback" class="feedback-value">START EXERCISE</div>
+                </div>
             </div>
-            <div class="info-card">
-                <div class="card-label">CURRENT STAGE</div>
-                <div id="ui-stage" class="status-value">READY</div>
-            </div>
-            <div class="info-card">
-                <div class="card-label">REAL-TIME FEEDBACK</div>
-                <div id="ui-feedback" class="feedback-value">START EXERCISE</div>
+
+            <div class="status-indicator-zone">
+                <div class="indicator-label">ENGINE STATUS</div>
+                <div id="ui-mode-badge" class="mode-badge theme-squat">SQUAT MODE</div>
             </div>
         </div>
     </div>
 
     <script>
-    //  [핵심 추가] 0.1초마다 백엔드로부터 최신 데이터를 수신하여 웹 UI 카드들을 동적 갱신 (Polling)
     setInterval(() => {
-        // 시스템이 멈춘(stopped) 상태가 아닐 때만 주기적으로 데이터를 조회
         const btn = document.getElementById('toggle-btn');
         if (!btn.classList.contains('btn-stopped')) {
             fetch('/get_data')
@@ -110,7 +169,70 @@
             })
             .catch(err => console.error("데이터 수신 오류:", err));
         }
-    }, 100); // 100ms = 0.1초 지연 주기
+    }, 100);
+
+    function toggleDropdown() {
+        const menu = document.getElementById('mode-menu');
+        menu.style.display = (menu.style.display === 'flex') ? 'none' : 'flex';
+    }
+
+    // 모드 스위칭 시 실시간 피드백 및 인디케이터 제어 로직 고도화
+    function changeMode(modeName) {
+        document.getElementById('mode-menu').style.display = 'none';
+        
+        const img = document.getElementById('stream-img');
+        const placeholder = document.getElementById('placeholder');
+        const btn = document.getElementById('toggle-btn');
+        
+        const badge = document.getElementById('ui-mode-badge');
+        const countTxt = document.getElementById('ui-count');
+        const countCard = document.getElementById('ui-count-card');
+        const sideTitle = document.getElementById('sidebar-title-line');
+        
+        fetch('/set_mode', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mode: modeName })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.status === 'success') {
+                // 1. 대시보드 기초 데이터 초기화
+                countTxt.innerText = "0";
+                document.getElementById('ui-stage').innerText = "READY";
+                document.getElementById('ui-feedback').innerText = "MODE SWAP -> RESUME SYSTEM";
+                
+                // 2. 영상 스트림 정지 및 프리뷰 텍스트 설정
+                img.src = "";
+                img.style.display = "none";
+                placeholder.innerText = modeName.toUpperCase() + " MODE READY";
+                placeholder.style.display = "block";
+                
+                btn.innerText = "RESUME SYSTEM";
+                btn.className = "btn btn-stopped";
+
+                // 3. 우측 하단 상태 인디케이터 배지 및 사이드바 테마 컬러 전면 스위칭
+                if (modeName === 'squat') {
+                    badge.innerText = "SQUAT MODE";
+                    badge.className = "mode-badge theme-squat";
+                    
+                    // 대시보드 포인트를 주황 테마로 변경
+                    countTxt.style.color = "#f59e0b";
+                    countCard.style.borderColor = "#3f3f46";
+                    sideTitle.style.borderColor = "#f59e0b";
+                } else {
+                    badge.innerText = "PULL-UP MODE";
+                    badge.className = "mode-badge theme-pullup";
+                    
+                    // 대시보드 포인트를 풀업전용 스카이블루 테마로 변경
+                    countTxt.style.color = "#38bdf8";
+                    countCard.style.borderColor = "#0284c7";
+                    sideTitle.style.borderColor = "#38bdf8";
+                }
+            }
+        })
+        .catch(err => console.error("모드 전환 오류:", err));
+    }
 
     function toggleStream() {
         fetch('/toggle', { method: 'POST' })
@@ -123,15 +245,14 @@
             if (data.status === 'stopped') {
                 img.src = "";
                 img.style.display = "none";
+                placeholder.innerText = "CAMERA OFF";
                 placeholder.style.display = "block";
-                
                 btn.innerText = "RESUME SYSTEM";
                 btn.className = "btn btn-stopped";
             } else {
                 img.src = "/video_feed?t=" + new Date().getTime();
                 img.style.display = "block";
                 placeholder.style.display = "none";
-                
                 btn.innerText = "PAUSE SYSTEM";
                 btn.className = "btn btn-running";
             }
