@@ -41,6 +41,7 @@ SharpEyes/
 ├── src/
 │   ├── detection/      # Pose & Segmentation 추론 및 판정 로직
 │   └── utils/          # 각도 계산 및 기하학 연산 유틸리티
+├── db_tools/           # DB 관리 스크립트 모음
 ├── templates/          # HTML 템플릿
 ├── venv/               # 가상환경
 ├── requirements.txt    # 의존성 패키지 목록
