@@ -4,7 +4,11 @@ from src.utils.math_utils import calculate_angle
 
 def run_pose_estimation(video_path=0, mode="squat", app_state=None):
     """
-    종료 신호 감지 시 루프를 완전히 이탈하여 카메라 장치를 해제(release)합니다.
+    YOLOv8 기반의 실시간 자세 인식 및 운동 카운팅 제너레이터 함수입니다.  
+        Args:
+- video_path: 0 (웹캠) 또는 비디오 파일 경로
+- mode: "squat" 또는 "pullup"
+- app_state: FastAPI 전역 상태 객체
     """
     model = YOLO('yolov8n-pose.pt')
 
@@ -32,7 +36,6 @@ def run_pose_estimation(video_path=0, mode="squat", app_state=None):
 
     try:
         while cap.isOpened():
-            # 웹 인터페이스에서 정지(stopped)를 요청하면 루프를 부수고 나갑니다.
             if app_state and app_state.state.stream_state == "stopped":
                 print(">>> [SharpEyes] 정지 신호 수신. 루프를 이탈합니다.")
                 break
@@ -45,7 +48,9 @@ def run_pose_estimation(video_path=0, mode="squat", app_state=None):
             results = model(frame, stream=True)
 
             for r in results:
+                # 영상에는 오직 깔끔한 YOLOv8 스켈레톤 라인만 그립니다.
                 annotated_frame = r.plot()
+                
                 if r.keypoints is not None and len(r.keypoints.xy) > 0:
                     keypoints = r.keypoints.xy[0] 
                     if len(keypoints) > 16:
@@ -60,6 +65,7 @@ def run_pose_estimation(video_path=0, mode="squat", app_state=None):
                             else:
                                 vertical_dist = abs(p3[1] - p1[1])
 
+                            # --- [하이브리드 카운팅 알고리즘] ---
                             if stage == "ready" or stage == "return":  
                                 if (angle < DOWN_ANGLE_LIMIT) or (vertical_dist < DOWN_DIST_LIMIT):
                                     stage = "action"
@@ -71,18 +77,18 @@ def run_pose_estimation(video_path=0, mode="squat", app_state=None):
                                     counter += 1
                                     feedback_msg = f"SUCCESS! COUNT: {counter}"
 
-                            cv2.putText(annotated_frame, f"COUNT: {counter}", (30, 60), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 0), 3)
-                            status_color = (0, 0, 255) if stage == "action" else (255, 255, 0)
-                            cv2.putText(annotated_frame, f"STAGE: {stage.upper()}", (30, 110), cv2.FONT_HERSHEY_SIMPLEX, 1, status_color, 2)
-                            cv2.putText(annotated_frame, f"A: {int(angle)} / D: {int(vertical_dist)}", (30, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
-                            cv2.putText(annotated_frame, feedback_msg, (30, 190), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 153, 51), 2)
+                            #  [핵심 연동] 계산된 실시간 변수들을 FastAPI 전역 state에 실시간 저장
+                            if app_state:
+                                app_state.state.count = counter
+                                app_state.state.stage = stage
+                                app_state.state.feedback = feedback_msg
 
+            # cv2.putText() 파트 완전 삭제 (영상의 순수화 및 CPU 부하 경감)
             ret, buffer = cv2.imencode('.jpg', annotated_frame)
             if not ret:
                 continue
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
     finally:
-        # 루프가 깨지면 무조건 카메라 장치를 OS에 반납합니다. (불빛 꺼짐)
         print(">>> [SharpEyes] 카메라 하드웨어 연결을 종료합니다.")
         cap.release()
