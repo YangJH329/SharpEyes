@@ -54,8 +54,11 @@
 
         .btn-running { background-color: #f59e0b; min-width: 160px; } 
         .btn-stopped { background-color: #10b981; min-width: 160px; } 
-        .btn-end { background-color: #ef4444; opacity: 0.6; cursor: not-allowed; }
-        .btn:hover:not(.btn-end) { opacity: 0.9; transform: translateY(-1px); }
+        
+        /* End of Exercise 활성화 활성 스타일 */
+        .btn-end { background-color: #ef4444; }
+
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
 
         /* [우측] 데이터 사이드바 영역 (30%) */
         .data-sidebar {
@@ -65,7 +68,6 @@
         }
         .sidebar-main-content { display: flex; flex-direction: column; gap: 20px; width: 100%; }
         
-        /* 유동적 테마 변경을 위한 빌드업 테두리 */
         .sidebar-title {
             font-size: 18px; font-weight: 700; color: #a1a1aa; text-transform: uppercase;
             letter-spacing: 1px; margin-bottom: 10px; border-left: 4px solid #f59e0b; padding-left: 10px;
@@ -78,32 +80,53 @@
         .card-label { font-size: 13px; color: #71717a; font-weight: 600; margin-bottom: 5px; }
         .count-card { align-items: center; padding: 30px 20px; background: linear-gradient(145deg, #13131a, #1a1a24); border: 1px solid #3f3f46; transition: border-color 0.3s ease; }
         
-        /* 모드별 스위칭용 실시간 메인 컬러 텍스트 */
         .count-value { font-size: 84px; font-weight: 900; color: #f59e0b; line-height: 1; margin-top: 10px; font-family: monospace, sans-serif; transition: color 0.3s ease; }
         .status-value { font-size: 24px; font-weight: 700; color: #38bdf8; margin-top: 5px; }
         .feedback-value { font-size: 20px; font-weight: 700; color: #10b981; margin-top: 5px; line-height: 1.4; }
 
-        /* ==========================================
-         새로 추가된 우측 하단 상태 인디케이터 (Status Indicator)
-           ========================================== */
+        /* 우측 하단 상태 인디케이터 스타일 */
         .status-indicator-zone {
-            border-top: 1px solid #27272a;
-            padding-top: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            border-top: 1px solid #27272a; padding-top: 15px;
+            display: flex; justify-content: space-between; align-items: center;
         }
         .indicator-label { font-size: 12px; color: #71717a; font-weight: 700; letter-spacing: 0.5px; }
         
-        /* 상태 배지 기본 스타일 */
         .mode-badge {
             padding: 6px 14px; font-size: 12px; font-weight: 800; border-radius: 20px;
             letter-spacing: 0.5px; text-transform: uppercase; transition: all 0.3s ease;
         }
-        /* 스쿼트 상태 (주황 테마) */
         .theme-squat { background-color: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
-        /* 풀업 상태 (파랑 테마) */
         .theme-pullup { background-color: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+
+        /* ==========================================
+           새로 추가된 세션 리포트 모달 팝업 CSS 스타일
+           ========================================== */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            display: none; justify-content: center; align-items: center;
+            z-index: 100;
+        }
+        .modal-content {
+            background-color: #1c1c24; border: 2px solid #27272a; border-radius: 16px;
+            padding: 40px; width: 450px; text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        }
+        .modal-title { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin-top: 0; margin-bottom: 25px; color: #f59e0b; }
+        
+        .modal-grid { display: flex; justify-content: space-between; gap: 15px; margin-bottom: 30px; }
+        .modal-card {
+            flex: 1; background-color: #13131a; border: 1px solid #27272a; border-radius: 10px; padding: 15px;
+        }
+        .modal-card-label { font-size: 12px; color: #71717a; font-weight: 700; margin-bottom: 5px; }
+        .modal-card-value { font-size: 28px; font-weight: 800; color: #ffffff; font-family: monospace, sans-serif; }
+
+        .btn-modal-close {
+            width: 100%; padding: 14px 0; background-color: #3f3f46; color: white;
+            font-size: 15px; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s;
+        }
+        .btn-modal-close:hover { background-color: #27272a; }
     </style>
 </head>
 <body>
@@ -128,7 +151,8 @@
                     </div>
                 </div>
                 <button id="toggle-btn" class="btn btn-running" onclick="toggleStream()">PAUSE SYSTEM</button>
-                <button class="btn btn-end">END OF EXERCISE</button>
+                
+                <button class="btn btn-end" onclick="showReport()">END OF EXERCISE</button>
             </div>
         </div>
 
@@ -156,7 +180,35 @@
         </div>
     </div>
 
+    <div id="report-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-title">SESSION REPORT</div>
+            
+            <div class="modal-grid">
+                <div class="modal-card">
+                    <div class="modal-card-label">TOTAL TIME</div>
+                    <div id="modal-time" class="modal-card-value">00:00</div>
+                </div>
+                <div class="modal-card">
+                    <div class="modal-card-label">TOTAL COUNT</div>
+                    <div id="modal-count" class="modal-card-value">0</div>
+                </div>
+            </div>
+
+            <button class="btn-modal-close" onclick="closeReport()">RESTART EXERCISE</button>
+        </div>
+    </div>
+
     <script>
+    // 운동 경과 시간 측정을 위한 변수 선언
+    let startTime = null;
+    let totalElapsedSeconds = 0;
+    let timerInterval = null;
+
+    // 페이지가 로드되자마자 즉시 타이머 가동 시작
+    startTimer();
+
+    // 0.1초마다 백엔드 데이터 수신 폴링 기능
     setInterval(() => {
         const btn = document.getElementById('toggle-btn');
         if (!btn.classList.contains('btn-stopped')) {
@@ -171,12 +223,84 @@
         }
     }, 100);
 
+    // 타이머 구동 함수
+    function startTimer() {
+        if (!timerInterval) {
+            startTime = Date.now() - (totalElapsedSeconds * 1000);
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                totalElapsedSeconds = elapsed;
+            }, 1000);
+        }
+    }
+
+    // 타이머 일시정지 함수
+    function pauseTimer() {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+
+    // 타이머 완전 초기화 함수
+    function resetTimer() {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        totalElapsedSeconds = 0;
+        startTimer();
+    }
+
+    // 초 단위를 MM:SS 포맷 문자열로 변환하는 함수
+    function formatTime(seconds) {
+        const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+        const s = String(seconds % 60).padStart(2, '0');
+        return `${m}:${s}`;
+    }
+
+    // 운동 종료 버튼 클릭 시 모달 팝업을 띄워주는 함수
+    function showReport() {
+        // 1. 타이머 일시정지
+        pauseTimer();
+
+        // 2. 안전장치: 비디오 스트리밍 채널 정지 연동 (백엔드 카메라 자원 완전 해제)
+        const img = document.getElementById('stream-img');
+        const placeholder = document.getElementById('placeholder');
+        const btn = document.getElementById('toggle-btn');
+
+        img.src = "";
+        img.style.display = "none";
+        placeholder.innerText = "EXERCISE END";
+        placeholder.style.display = "block";
+        btn.innerText = "RESUME SYSTEM";
+        btn.className = "btn btn-stopped";
+
+        // 3. 현재 화면에 표시된 개수와 타이머가 계산한 시간을 모달 데이터 칸에 매핑
+        const currentCount = document.getElementById('ui-count').innerText;
+        document.getElementById('modal-count').innerText = currentCount;
+        document.getElementById('modal-time').innerText = formatTime(totalElapsedSeconds);
+
+        // 4. 모달 창 화면에 노출
+        document.getElementById('report-modal').style.display = 'flex';
+    }
+
+    // 모달 팝업 내부의 RESTART 버튼 클릭 시 화면을 리셋하는 함수
+    function closeReport() {
+        // 1. 모달 팝업 숨기기
+        document.getElementById('report-modal').style.display = 'none';
+
+        // 2. 타이머 시간 0초로 완전 청소 및 재가동
+        resetTimer();
+
+        // 3. 백엔드 전역 상태 및 프론트 UI 요소 강제 리셋을 위해 changeMode 구문 강제 트리거
+        // 기본 선택되어 있는 배지의 텍스트를 기준으로 안전하게 재부팅 처리합니다.
+        const badgeText = document.getElementById('ui-mode-badge').innerText;
+        const targetMode = badgeText.includes('SQUAT') ? 'squat' : 'pullup';
+        changeMode(targetMode);
+    }
+
     function toggleDropdown() {
         const menu = document.getElementById('mode-menu');
         menu.style.display = (menu.style.display === 'flex') ? 'none' : 'flex';
     }
 
-    // 모드 스위칭 시 실시간 피드백 및 인디케이터 제어 로직 고도화
     function changeMode(modeName) {
         document.getElementById('mode-menu').style.display = 'none';
         
@@ -197,12 +321,10 @@
         .then(response => response.json())
         .then(data => {
             if(data.status === 'success') {
-                // 1. 대시보드 기초 데이터 초기화
                 countTxt.innerText = "0";
                 document.getElementById('ui-stage').innerText = "READY";
                 document.getElementById('ui-feedback').innerText = "MODE SWAP -> RESUME SYSTEM";
                 
-                // 2. 영상 스트림 정지 및 프리뷰 텍스트 설정
                 img.src = "";
                 img.style.display = "none";
                 placeholder.innerText = modeName.toUpperCase() + " MODE READY";
@@ -211,20 +333,15 @@
                 btn.innerText = "RESUME SYSTEM";
                 btn.className = "btn btn-stopped";
 
-                // 3. 우측 하단 상태 인디케이터 배지 및 사이드바 테마 컬러 전면 스위칭
                 if (modeName === 'squat') {
                     badge.innerText = "SQUAT MODE";
                     badge.className = "mode-badge theme-squat";
-                    
-                    // 대시보드 포인트를 주황 테마로 변경
                     countTxt.style.color = "#f59e0b";
                     countCard.style.borderColor = "#3f3f46";
                     sideTitle.style.borderColor = "#f59e0b";
                 } else {
                     badge.innerText = "PULL-UP MODE";
                     badge.className = "mode-badge theme-pullup";
-                    
-                    // 대시보드 포인트를 풀업전용 스카이블루 테마로 변경
                     countTxt.style.color = "#38bdf8";
                     countCard.style.borderColor = "#0284c7";
                     sideTitle.style.borderColor = "#38bdf8";
@@ -249,12 +366,14 @@
                 placeholder.style.display = "block";
                 btn.innerText = "RESUME SYSTEM";
                 btn.className = "btn btn-stopped";
+                pauseTimer(); // 카메라 일시정지 시 타이머도 일시정지
             } else {
                 img.src = "/video_feed?t=" + new Date().getTime();
                 img.style.display = "block";
                 placeholder.style.display = "none";
                 btn.innerText = "PAUSE SYSTEM";
                 btn.className = "btn btn-running";
+                startTimer(); // 카메라 재개 시 타이머도 재가동
             }
         })
         .catch(err => console.error(err));
