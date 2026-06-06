@@ -181,24 +181,29 @@
     </div>
 
     <div id="report-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-title">SESSION REPORT</div>
-            
-            <div class="modal-grid">
-                <div class="modal-card">
-                    <div class="modal-card-label">TOTAL TIME</div>
-                    <div id="modal-time" class="modal-card-value">00:00</div>
-                </div>
-                <div class="modal-card">
-                    <div class="modal-card-label">TOTAL COUNT</div>
-                    <div id="modal-count" class="modal-card-value">0</div>
-                </div>
-            </div>
-            <button id="btn-save-log" class="btn-modal-close" style="background-color: #10b981; margin-bottom: 12px;" onclick="handleSaveWorkout()">SAVE WORKOUT LOG</button>
+    <div class="modal-content" style="position: relative; padding-top: 40px;">
+        
+        <span class="modal-close-x" onclick="escapeReport()" style="position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: #a1a1aa; transition: color 0.2s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='#a1a1aa'">
+            &times;
+        </span>
 
-            <button class="btn-modal-close" onclick="closeReport()">RESTART EXERCISE</button>
+        <div class="modal-title">SESSION REPORT</div>
+        
+        <div class="modal-grid">
+            <div class="modal-card">
+                <div class="modal-card-label">TOTAL TIME</div>
+                <div id="modal-time" class="modal-card-value">00:00</div>
+            </div>
+            <div class="modal-card">
+                <div class="modal-card-label">TOTAL COUNT</div>
+                <div id="modal-count" class="modal-card-value">0</div>
+            </div>
         </div>
+
+        <button id="btn-save-log" class="btn-modal-close" style="background-color: #10b981; margin-bottom: 12px;" onclick="handleSaveWorkout()">SAVE WORKOUT LOG</button>
+        <button class="btn-modal-close" onclick="closeReport()">RESTART EXERCISE</button>
     </div>
+</div>
 
     <script>
         // 운동 경과 시간 및 타이머 제어를 위한 글로벌 변수
@@ -523,7 +528,17 @@ function handleSaveWorkout() {
     .catch(err => {
         alert("저장 실패: " + err.message);
     });
-}
+    }   
+
+    // 운동 종료 모달에서 세션 데이터를 보존한 상태로 단순히 창만 닫고 대시보드로 돌아가는 함수
+    function escapeReport() {
+    // 1. 성적표 모달창 은폐
+    document.getElementById('report-modal').style.display = 'none';
+
+    // 2. 타이머와 백엔드 분석 루프는 일시정지(Pause)된 상태를 온전히 유지합니다.
+    // 사용자는 대시보드 메인 화면을 보면서 다시 'RESUME SYSTEM' 버튼을 눌러 하던 운동을 이어서 재개할 수 있습니다.
+    console.log(">>> [System] 세션 리포트 모달 탈출 성공 - 현재까지의 운동 데이터가 보존되었습니다.");
+    }
     </script>
     
     <div id="auth-modal" class="modal-overlay" style="display: flex;">
