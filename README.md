@@ -16,6 +16,7 @@
 * **AI Model**: Ultralytics YOLOv8 (Real-time Human Pose Estimation, Segmentation(추가 예정))
 * **Computer Vision**: OpenCV, NumPy
 * **Language**: Python 3.12+
+* **Database**: SQLite3 (Local Embedded DB)
 * **Version Control**: Git / GitHub (Feature Branch Strategy)
 * **Environment**: Python Virtual Environment (venv)
 * **Framework**: FastAPI
@@ -33,6 +34,26 @@
 * **Real-time Feedback**: 이탈 감지 시 시각적/청각적 피드백을 통해 사용자의 위치 수정을 유도합니다.
 
 ---
+
+## 데이터베이스 구조 (Database Schema)
+본 시스템은 사용자 인증 및 운동 기록 통계를 관리하기 위해 경량 관계형 데이터베이스인 SQLite3를 활용합니다.
+
+### 1. users 테이블
+사용자의 계정 정보를 관리하는 테이블입니다.
+* **id**: INTEGER (Primary Key, Auto-Increment) - 고유 식별 번호
+* **username**: TEXT (NOT NULL, UNIQUE) - 사용자 로그인 아이디
+* **password**: TEXT (NOT NULL) - SHA-256 단방향 해시 알고리즘으로 암호화된 비밀번호
+
+### 2. workout_logs 테이블
+사용자가 완료한 세션별 운동 기록을 누적하는 테이블입니다. users 테이블과 외래키(Foreign Key)로 관계가 매핑되어 있습니다.
+* **id**: INTEGER (Primary Key, Auto-Increment) - 고유 식별 번호
+* **user_id**: INTEGER (NOT NULL) - users 테이블의 id를 참조하는 외래키
+* **exercise_mode**: TEXT (NOT NULL) - 수행한 운동 종류 (squat 또는 pullup)
+* **total_count**: INTEGER (NOT NULL) - 해당 세션에서 최종 성공한 운동 횟수
+* **total_time**: TEXT (NOT NULL) - 운동 경과 시간 (MM:SS 포맷)
+* **timestamp**: DATETIME (DEFAULT CURRENT_TIMESTAMP) - 데이터가 기록된 날짜 및 시간
+
+--- 
 
 ## 📂 프로젝트 구조 (Project Structure)
 ```text
