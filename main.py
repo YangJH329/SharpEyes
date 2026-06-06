@@ -181,6 +181,43 @@ def save_workout(data: WorkoutLogSchema, user_id: str = Cookie(None)):
         raise HTTPException(status_code=500, detail=f"데이터베이스 오류: {str(e)}")
     finally:
         conn.close()
+
+# -------------------------------------------------------------
+# 5. 운동 결과 조회 API ("/workout_logs")
+# -------------------------------------------------------------
+@app.get("/workout_logs")
+async def get_workout_logs(request: Request):
+    # 기존 라우터들과 일관되게 쿠키에서 user_id를 가져옵니다.
+    user_id = request.cookies.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
+    
+    conn = sqlite3.connect("sharpeyes.db")
+    cursor = conn.cursor()
+    
+    # 최근 기록 순으로 정렬하여 조회
+    cursor.execute("""
+        SELECT id, exercise_mode, total_count, total_time, timestamp 
+        FROM workout_logs 
+        WHERE user_id = ? 
+        ORDER BY timestamp DESC
+    """, (user_id,))
+    
+    logs = cursor.fetchall()
+    conn.close()
+    
+    # 프론트엔드 반환용 포맷팅
+    result = []
+    for log in logs:
+        result.append({
+            "id": log[0],
+            "exercise_mode": log[1],
+            "total_count": log[2],
+            "total_time": log[3],
+            "timestamp": log[4]
+        })
+        
+    return {"status": "success", "logs": result}
         
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
