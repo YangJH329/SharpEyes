@@ -7,20 +7,20 @@ import sqlite3
 import src.detection.pose_detector as pdf
 import hashlib
 
-# Fast API 애플리케이션 인스턴스 생성 및 템플릿 디렉토리 설정
+# FastAPI 애플리케이션 인스턴스 생성 및 템플릿 디렉토리 설정
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-def hash_password(password : str) -> str:
-    """비밀번호를 SHA-256 해시값(64자리 문자열)으로 리턴 ."""
+def hash_password(password: str) -> str:
+    """비밀번호를 SHA-256 해시값(64자리 문자열)으로 리턴합니다."""
     return hashlib.sha256(password.encode()).hexdigest()
 
 # 글로벌 시스템 상태 및 운동 데이터 보관소 초기화
-app.state.stream_state = "running"
+app.state.stream_state = "stopped"  # 웹캠 영상 분석 루프의 시작 기본상태를 "stopped"로 설정
 app.state.current_mode = "squat"
 app.state.count = 0
 app.state.stage = "ready"
-app.state.feedback = "START EXERCISE"
+app.state.feedback = "SYSTEM PAUSED"  # 첫 접속 시 사용자에게 노출될 초기 피드백 메시지
 
 # 프론트엔드 통신용 데이터 모델 정의
 class ModeRequest(BaseModel):
@@ -31,7 +31,7 @@ class AuthSchema(BaseModel):
     password: str
 
 # 프론트엔드가 보낼 운동 결과 데이터 구조 정의
-class WorkoutLogSchema(BaseModel) : 
+class WorkoutLogSchema(BaseModel): 
     exercise_mode: str
     total_count: int
     total_time: str
@@ -42,10 +42,10 @@ class WorkoutLogSchema(BaseModel) :
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request):
     """메인 대시보드 화면을 렌더링하고 상태를 초기화합니다."""
-    app.state.stream_state = "running"
+    app.state.stream_state = "stopped"  # 첫 접속 및 새로고침 시에도 일시정지 상태 유지
     app.state.count = 0
     app.state.stage = "ready"
-    app.state.feedback = "START EXERCISE"
+    app.state.feedback = "SYSTEM PAUSED"  # 화면 초기 진입 시 일시정지 문구 안내
     return templates.TemplateResponse(request=request, name="index.html")
 
 @app.post("/register")
@@ -62,7 +62,9 @@ def register_user(data: AuthSchema):
         if existing_user:
             raise HTTPException(status_code=400, detail="이미 존재하는 아이디입니다.")
         
+        # 비밀번호 단방향 해시 암호화 적용
         hashed_pw = hash_password(data.password)
+        
         # 중복이 없는 경우 회원 정보 삽입
         cursor.execute(
             "INSERT INTO users (username, password) VALUES (?, ?)",
@@ -87,11 +89,11 @@ def login_user(data: AuthSchema, response: Response):
         cursor.execute("SELECT id, username, password FROM users WHERE username = ?", (data.username,))
         user = cursor.fetchone()
         
-        # 자격 증명 검증 (비밀번호 단순 텍스트 비교)
+        # 암호화된 비밀번호 비교 검증
         if not user or user[2] != hash_password(data.password):
             raise HTTPException(status_code=400, detail="아이디 또는 비밀번호가 일치하지 않습니다.")
         
-        # 로그인 성공 시 클라이언트에 보안 쿠키 심기
+        # 로그인 성공 시 클라이언트에 보안 쿠키 발급
         response.set_cookie(key="user_id", value=str(user[0]), httponly=True)
         response.set_cookie(key="username", value=user[1], httponly=True)
         
@@ -123,8 +125,10 @@ def toggle_stream():
     """웹캠 영상 분석 루프의 가동 및 일시정지 상태를 토글합니다."""
     if app.state.stream_state == "running":
         app.state.stream_state = "stopped"
+        app.state.feedback = "SYSTEM PAUSED"  # 일시정지 시 화면 문구 연동
     else:
         app.state.stream_state = "running"
+        app.state.feedback = "START EXERCISE"  # 구동 시 화면 문구 변경
     return {"status": app.state.stream_state}
 
 # -------------------------------------------------------------
@@ -136,7 +140,10 @@ def set_mode(data: ModeRequest):
     app.state.current_mode = data.mode
     app.state.count = 0
     app.state.stage = "ready"
-    app.state.feedback = "START EXERCISE"
+    
+    # [UX 개선] 모드가 바뀌었음을 유저에게 명확히 고지하고 가동을 유도
+    app.state.feedback = f"MODE SWAPPED TO {data.mode.upper()} -> RESUME SYSTEM"
+    
     print(f">>> [System] 운동 모드 변경 완료: {data.mode.upper()}")
     return {"status": "success", "current_mode": app.state.current_mode}
 
@@ -153,18 +160,16 @@ def get_data():
 # 4. 운동 기록 저장 API (/save_workout)
 # -------------------------------------------------------------
 @app.post("/save_workout")
-def save_workout(data : WorkoutLogSchema, user_id : str = Cookie(None)):
+def save_workout(data: WorkoutLogSchema, user_id: str = Cookie(None)):
     """운동 기록을 데이터베이스에 저장합니다."""
-
-    # 만약 쿠키에 user_id가 없다면 인증되지 않은 요청으로 간주하여 에러 반환
-    if not user_id :
-        raise HTTPException(status_code = 401, detail="로그인이 필요한 서비스 입니다.")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="로그인이 필요한 서비스 입니다.")
     
     conn = sqlite3.connect("sharpeyes.db")
     cursor = conn.cursor()
     
     try:
-        # workout_logs 테이블에 운동 기록 삽입
+        # workout_logs 테이블에 로그인된 유저의 고유 세션 데이터 저장
         cursor.execute("""
             INSERT INTO workout_logs (user_id, exercise_mode, total_count, total_time)
             VALUES (?, ?, ?, ?)

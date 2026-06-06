@@ -138,8 +138,8 @@
                 <p>컴퓨터 비전 기술을 활용한 독립형 하이브리드 모션 분석 엔진</p>
             </div>
             <div class="video-container">
-                <img src="/video_feed" id="stream-img" class="video-stream" alt="AI 모션 분석 피드 Channel">
-                <div id="placeholder" class="placeholder-text">CAMERA OFF</div>
+                <img src="" id="stream-img" class="video-stream" alt="AI 모션 분석 피드 Channel" style="display: none;">
+                <div id="placeholder" class="placeholder-text" style="display: block;">SYSTEM PAUSED</div>
             </div>
 
             <div class="control-area">
@@ -150,7 +150,7 @@
                         <div class="dropdown-item" onclick="changeMode('pullup')">PULL-UP</div>
                     </div>
                 </div>
-                <button id="toggle-btn" class="btn btn-running" onclick="toggleStream()">PAUSE SYSTEM</button>
+                <button id="toggle-btn" class="btn btn-stopped" onclick="toggleStream()">RESUME SYSTEM</button>
                 
                 <button class="btn btn-end" onclick="showReport()">END OF EXERCISE</button>
             </div>
