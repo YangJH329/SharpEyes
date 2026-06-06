@@ -138,8 +138,8 @@
                 <p>컴퓨터 비전 기술을 활용한 독립형 하이브리드 모션 분석 엔진</p>
             </div>
             <div class="video-container">
-                <img src="/video_feed" id="stream-img" class="video-stream" alt="AI 모션 분석 피드 Channel">
-                <div id="placeholder" class="placeholder-text">CAMERA OFF</div>
+                <img src="" id="stream-img" class="video-stream" alt="AI 모션 분석 피드 Channel" style="display: none;">
+                <div id="placeholder" class="placeholder-text" style="display: block;">SYSTEM PAUSED</div>
             </div>
 
             <div class="control-area">
@@ -150,7 +150,7 @@
                         <div class="dropdown-item" onclick="changeMode('pullup')">PULL-UP</div>
                     </div>
                 </div>
-                <button id="toggle-btn" class="btn btn-running" onclick="toggleStream()">PAUSE SYSTEM</button>
+                <button id="toggle-btn" class="btn btn-stopped" onclick="toggleStream()">RESUME SYSTEM</button>
                 
                 <button class="btn btn-end" onclick="showReport()">END OF EXERCISE</button>
             </div>
@@ -181,37 +181,47 @@
     </div>
 
     <div id="report-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-title">SESSION REPORT</div>
-            
-            <div class="modal-grid">
-                <div class="modal-card">
-                    <div class="modal-card-label">TOTAL TIME</div>
-                    <div id="modal-time" class="modal-card-value">00:00</div>
-                </div>
-                <div class="modal-card">
-                    <div class="modal-card-label">TOTAL COUNT</div>
-                    <div id="modal-count" class="modal-card-value">0</div>
-                </div>
-            </div>
+    <div class="modal-content" style="position: relative; padding-top: 40px;">
+        
+        <span class="modal-close-x" onclick="escapeReport()" style="position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: #a1a1aa; transition: color 0.2s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='#a1a1aa'">
+            &times;
+        </span>
 
-            <button class="btn-modal-close" onclick="closeReport()">RESTART EXERCISE</button>
+        <div class="modal-title">SESSION REPORT</div>
+        
+        <div class="modal-grid">
+            <div class="modal-card">
+                <div class="modal-card-label">TOTAL TIME</div>
+                <div id="modal-time" class="modal-card-value">00:00</div>
+            </div>
+            <div class="modal-card">
+                <div class="modal-card-label">TOTAL COUNT</div>
+                <div id="modal-count" class="modal-card-value">0</div>
+            </div>
         </div>
+
+        <button id="btn-save-log" class="btn-modal-close" style="background-color: #10b981; margin-bottom: 12px;" onclick="handleSaveWorkout()">SAVE WORKOUT LOG</button>
+        <button class="btn-modal-close" onclick="closeReport()">RESTART EXERCISE</button>
     </div>
+</div>
 
     <script>
-    // 운동 경과 시간 측정을 위한 변수 선언
+        // 운동 경과 시간 및 타이머 제어를 위한 글로벌 변수
     let startTime = null;
     let totalElapsedSeconds = 0;
     let timerInterval = null;
 
-    // 페이지가 로드되자마자 즉시 타이머 가동 시작
-    startTimer();
+    // 현재 인증 탭 상태 관리 변수 (기본값: 로그인)
+    let currentAuthMode = 'login';
 
-    // 0.1초마다 백엔드 데이터 수신 폴링 기능
+    // 페이지가 로드되자마자 백엔드 실시간 데이터 수신 폴링 가동
+    // 단, 로그인 모달이 열려있는 동안은 백엔드 요청을 일시 차단합니다.
     setInterval(() => {
+        const authModal = document.getElementById('auth-modal');
         const btn = document.getElementById('toggle-btn');
-        if (!btn.classList.contains('btn-stopped')) {
+    
+        // 로그인 모달이 닫혀있고, 카메라 일시정지 상태가 아닐 때만 폴링 진행
+        if (authModal.style.display === 'none' && !btn.classList.contains('btn-stopped')) {
             fetch('/get_data')
             .then(response => response.json())
             .then(data => {
@@ -223,161 +233,340 @@
         }
     }, 100);
 
-    // 타이머 구동 함수
-    function startTimer() {
-        if (!timerInterval) {
-            startTime = Date.now() - (totalElapsedSeconds * 1000);
-            timerInterval = setInterval(() => {
-                const elapsed = Math.floor((Date.now() - startTime) / 1000);
-                totalElapsedSeconds = elapsed;
-            }, 1000);
+    // =============================================================
+    // 1. 사용자 인증 관리 시스템 (로그인 / 회원가입)
+    // =============================================================
+
+    // 로그인 탭과 회원가입 탭을 클릭했을 때 인터랙션을 제어하는 함수
+    function switchAuthTab(mode) {
+        currentAuthMode = mode;
+        const loginTab = document.getElementById('tab-login');
+        const registerTab = document.getElementById('tab-register');
+        const confirmZone = document.getElementById('register-confirm-zone');
+        const submitBtn = document.getElementById('btn-auth-submit');
+        const title = document.getElementById('auth-title');
+
+        if (mode === 'login') {
+            title.innerText = "SHARPEYES LOGIN";
+            loginTab.style.borderColor = "#f59e0b";
+            registerTab.style.borderColor = "#52525b";
+            confirmZone.style.display = "none";
+            submitBtn.innerText = "SIGN IN";
+            submitBtn.style.backgroundColor = "#f59e0b";
+        } else {
+            title.innerText = "SHARPEYES REGISTER";
+            loginTab.style.borderColor = "#52525b";
+            registerTab.style.borderColor = "#38bdf8";
+            confirmZone.style.display = "block";
+            submitBtn.innerText = "CREATE ACCOUNT";
+            submitBtn.style.backgroundColor = "#38bdf8";
         }
     }
 
-    // 타이머 일시정지 함수
-    function pauseTimer() {
-        clearInterval(timerInterval);
-        timerInterval = null;
+    // 입력 폼 데이터를 가공하여 백엔드 SQLite3와 통신하는 핵심 함수
+    function handleAuthSubmit() {
+        const usernameInput = document.getElementById('auth-username').value.trim();
+        const passwordInput = document.getElementById('auth-password').value.trim();
+        const passwordConfirmInput = document.getElementById('auth-password-confirm').value.trim();
+
+    // 입력 누락 사전 방어
+    if (!usernameInput || !passwordInput) {
+        alert("아이디와 비밀번호를 모두 입력해 주세요.");
+        return;
     }
 
-    // 타이머 완전 초기화 함수
-    function resetTimer() {
-        clearInterval(timerInterval);
-        timerInterval = null;
-        totalElapsedSeconds = 0;
-        startTimer();
+    // 회원가입 모드일 때 비밀번호 일치 여부 검증
+    if (currentAuthMode === 'register' && passwordInput !== passwordConfirmInput) {
+        alert("비밀번호 확인이 일치하지 않습니다.");
+        return;
     }
 
-    // 초 단위를 MM:SS 포맷 문자열로 변환하는 함수
-    function formatTime(seconds) {
-        const m = String(Math.floor(seconds / 60)).padStart(2, '0');
-        const s = String(seconds % 60).padStart(2, '0');
-        return `${m}:${s}`;
-    }
+    // 현재 선택 모드에 맞춰 API 엔드포인트 분기
+    const targetEndpoint = currentAuthMode === 'login' ? '/login' : '/register';
 
-    // 운동 종료 버튼 클릭 시 모달 팝업을 띄워주는 함수
-    function showReport() {
-        // 1. 타이머 일시정지
-        pauseTimer();
-
-        // 2. 안전장치: 비디오 스트리밍 채널 정지 연동 (백엔드 카메라 자원 완전 해제)
-        const img = document.getElementById('stream-img');
-        const placeholder = document.getElementById('placeholder');
-        const btn = document.getElementById('toggle-btn');
-
-        img.src = "";
-        img.style.display = "none";
-        placeholder.innerText = "EXERCISE END";
-        placeholder.style.display = "block";
-        btn.innerText = "RESUME SYSTEM";
-        btn.className = "btn btn-stopped";
-
-        // 3. 현재 화면에 표시된 개수와 타이머가 계산한 시간을 모달 데이터 칸에 매핑
-        const currentCount = document.getElementById('ui-count').innerText;
-        document.getElementById('modal-count').innerText = currentCount;
-        document.getElementById('modal-time').innerText = formatTime(totalElapsedSeconds);
-
-        // 4. 모달 창 화면에 노출
-        document.getElementById('report-modal').style.display = 'flex';
-    }
-
-    // 모달 팝업 내부의 RESTART 버튼 클릭 시 화면을 리셋하는 함수
-    function closeReport() {
-        // 1. 모달 팝업 숨기기
-        document.getElementById('report-modal').style.display = 'none';
-
-        // 2. 타이머 시간 0초로 완전 청소 및 재가동
-        resetTimer();
-
-        // 3. 백엔드 전역 상태 및 프론트 UI 요소 강제 리셋을 위해 changeMode 구문 강제 트리거
-        // 기본 선택되어 있는 배지의 텍스트를 기준으로 안전하게 재부팅 처리합니다.
-        const badgeText = document.getElementById('ui-mode-badge').innerText;
-        const targetMode = badgeText.includes('SQUAT') ? 'squat' : 'pullup';
-        changeMode(targetMode);
-    }
-
-    function toggleDropdown() {
-        const menu = document.getElementById('mode-menu');
-        menu.style.display = (menu.style.display === 'flex') ? 'none' : 'flex';
-    }
-
-    function changeMode(modeName) {
-        document.getElementById('mode-menu').style.display = 'none';
-        
-        const img = document.getElementById('stream-img');
-        const placeholder = document.getElementById('placeholder');
-        const btn = document.getElementById('toggle-btn');
-        
-        const badge = document.getElementById('ui-mode-badge');
-        const countTxt = document.getElementById('ui-count');
-        const countCard = document.getElementById('ui-count-card');
-        const sideTitle = document.getElementById('sidebar-title-line');
-        
-        fetch('/set_mode', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mode: modeName })
+    // 백엔드 파이썬 라우터로 비동기 JSON 데이터 전송
+    fetch(targetEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            username: usernameInput,
+            password: passwordInput
         })
-        .then(response => response.json())
-        .then(data => {
-            if(data.status === 'success') {
-                countTxt.innerText = "0";
-                document.getElementById('ui-stage').innerText = "READY";
-                document.getElementById('ui-feedback').innerText = "MODE SWAP -> RESUME SYSTEM";
+    })
+    .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.detail || "인증 처리 중 서버 오류가 발생했습니다.");
+        }
+        return data;
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            if (currentAuthMode === 'login') {
+                // 로그인 성공 시 흐름
+                alert(data.message);
+                document.getElementById('auth-modal').style.display = 'none';
                 
-                img.src = "";
-                img.style.display = "none";
-                placeholder.innerText = modeName.toUpperCase() + " MODE READY";
-                placeholder.style.display = "block";
-                
-                btn.innerText = "RESUME SYSTEM";
-                btn.className = "btn btn-stopped";
-
-                if (modeName === 'squat') {
-                    badge.innerText = "SQUAT MODE";
-                    badge.className = "mode-badge theme-squat";
-                    countTxt.style.color = "#f59e0b";
-                    countCard.style.borderColor = "#3f3f46";
-                    sideTitle.style.borderColor = "#f59e0b";
-                } else {
-                    badge.innerText = "PULL-UP MODE";
-                    badge.className = "mode-badge theme-pullup";
-                    countTxt.style.color = "#38bdf8";
-                    countCard.style.borderColor = "#0284c7";
-                    sideTitle.style.borderColor = "#38bdf8";
-                }
-            }
-        })
-        .catch(err => console.error("모드 전환 오류:", err));
-    }
-
-    function toggleStream() {
-        fetch('/toggle', { method: 'POST' })
-        .then(response => response.json())
-        .then(data => {
-            const img = document.getElementById('stream-img');
-            const placeholder = document.getElementById('placeholder');
-            const btn = document.getElementById('toggle-btn');
-            
-            if (data.status === 'stopped') {
-                img.src = "";
-                img.style.display = "none";
-                placeholder.innerText = "CAMERA OFF";
-                placeholder.style.display = "block";
-                btn.innerText = "RESUME SYSTEM";
-                btn.className = "btn btn-stopped";
-                pauseTimer(); // 카메라 일시정지 시 타이머도 일시정지
+                // 시스템 정식 가동 및 타이머 리셋 후 시작
+                resetTimer();
             } else {
-                img.src = "/video_feed?t=" + new Date().getTime();
-                img.style.display = "block";
-                placeholder.style.display = "none";
-                btn.innerText = "PAUSE SYSTEM";
-                btn.className = "btn btn-running";
-                startTimer(); // 카메라 재개 시 타이머도 재가동
+                // 회원가입 성공 시 흐름
+                alert(data.message + " 로그인 탭에서 로그인을 획득해 주세요.");
+                document.getElementById('auth-password').value = "";
+                document.getElementById('auth-password-confirm').value = "";
+                switchAuthTab('login');
             }
+        }
+    })
+    .catch(err => {
+        alert("인증 실패: " + err.message);
+    });
+}
+
+// =============================================================
+// 2. 운동 타이머 및 분석 세션 제어 시스템
+// =============================================================
+
+function startTimer() {
+    if (!timerInterval) {
+        startTime = Date.now() - (totalElapsedSeconds * 1000);
+        timerInterval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            totalElapsedSeconds = elapsed;
+        }, 1000);
+    }
+}
+
+function pauseTimer() {
+    clearInterval(timerInterval);
+    timerInterval = null;
+}
+
+function resetTimer() {
+    clearInterval(timerInterval);
+    timerInterval = null;
+    totalElapsedSeconds = 0;
+    startTimer();
+}
+
+function formatTime(seconds) {
+    const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+    const s = String(seconds % 60).padStart(2, '0');
+    return `${m}:${s}`;
+}
+
+// END OF EXERCISE 버튼 핸들러
+function showReport() {
+    // 1. 경과 타이머 일시정지
+    pauseTimer();
+
+    // 2. 비디오 비전 분석 차단 및 플레이스홀더 전환
+    const img = document.getElementById('stream-img');
+    const placeholder = document.getElementById('placeholder');
+    const btn = document.getElementById('toggle-btn');
+
+    img.src = "";
+    img.style.display = "none";
+    placeholder.innerText = "EXERCISE END";
+    placeholder.style.display = "block";
+    btn.innerText = "RESUME SYSTEM";
+    btn.className = "btn btn-stopped";
+
+    // 3. 현재 화면 실시간 스코어를 캡처하여 모달 컴포넌트에 주입
+    const currentCount = document.getElementById('ui-count').innerText;
+    document.getElementById('modal-count').innerText = currentCount;
+    document.getElementById('modal-time').innerText = formatTime(totalElapsedSeconds);
+
+    // 4. 리포트 모달 출력
+    document.getElementById('report-modal').style.display = 'flex';
+}
+
+// RESTART EXERCISE 버튼 핸들러
+function closeReport() {
+    document.getElementById('report-modal').style.display = 'none';
+    resetTimer();
+
+    // 저장 버튼 상태 초기화 코드 추가
+    const saveBtn = document.getElementById('btn-save-log');
+    saveBtn.innerText = "SAVE WORKOUT LOG";
+    saveBtn.style.backgroundColor = "#10b981";
+    saveBtn.disabled = false;
+
+    // 현재 적용 중인 디바이스 배지 텍스트를 파싱하여 백엔드 코어 강제 동기화 재부팅
+    const badgeText = document.getElementById('ui-mode-badge').innerText;
+    const targetMode = badgeText.includes('SQUAT') ? 'squat' : 'pullup';
+    changeMode(targetMode);
+}
+
+// =============================================================
+// 3. 운동 환경 설정 및 스트리밍 상태 제어 시스템
+// =============================================================
+
+function toggleDropdown() {
+    const menu = document.getElementById('mode-menu');
+    menu.style.display = (menu.style.display === 'flex') ? 'none' : 'flex';
+}
+
+function changeMode(modeName) {
+    document.getElementById('mode-menu').style.display = 'none';
+    
+    const img = document.getElementById('stream-img');
+    const placeholder = document.getElementById('placeholder');
+    const btn = document.getElementById('toggle-btn');
+    
+    const badge = document.getElementById('ui-mode-badge');
+    const countTxt = document.getElementById('ui-count');
+    const countCard = document.getElementById('ui-count-card');
+    const sideTitle = document.getElementById('sidebar-title-line');
+    
+    fetch('/set_mode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: modeName })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.status === 'success') {
+            countTxt.innerText = "0";
+            document.getElementById('ui-stage').innerText = "READY";
+            document.getElementById('ui-feedback').innerText = "MODE SWAP -> RESUME SYSTEM";
+            
+            img.src = "";
+            img.style.display = "none";
+            placeholder.innerText = modeName.toUpperCase() + " MODE READY";
+            placeholder.style.display = "block";
+            
+            btn.innerText = "RESUME SYSTEM";
+            btn.className = "btn btn-stopped";
+
+            if (modeName === 'squat') {
+                badge.innerText = "SQUAT MODE";
+                badge.className = "mode-badge theme-squat";
+                countTxt.style.color = "#f59e0b";
+                countCard.style.borderColor = "#3f3f46";
+                sideTitle.style.borderColor = "#f59e0b";
+            } else {
+                badge.innerText = "PULL-UP MODE";
+                badge.className = "mode-badge theme-pullup";
+                countTxt.style.color = "#38bdf8";
+                countCard.style.borderColor = "#0284c7";
+                sideTitle.style.borderColor = "#38bdf8";
+            }
+        }
+    })
+    .catch(err => console.error("모드 전환 오류:", err));
+}
+
+function toggleStream() {
+    fetch('/toggle', { method: 'POST' })
+    .then(response => response.json())
+    .then(data => {
+        const img = document.getElementById('stream-img');
+        const placeholder = document.getElementById('placeholder');
+        const btn = document.getElementById('toggle-btn');
+        
+        if (data.status === 'stopped') {
+            img.src = "";
+            img.style.display = "none";
+            placeholder.innerText = "CAMERA OFF";
+            placeholder.style.display = "block";
+            btn.innerText = "RESUME SYSTEM";
+            btn.className = "btn btn-stopped";
+            pauseTimer();
+        } else {
+            img.src = "/video_feed?t=" + new Date().getTime();
+            img.style.display = "block";
+            placeholder.style.display = "none";
+            btn.innerText = "PAUSE SYSTEM";
+            btn.className = "btn btn-running";
+            startTimer();
+        }
+    })
+    .catch(err => console.error(err));
+}   
+
+    // [SAVE WORKOUT LOG] 버튼 클릭 시 현재 모달의 데이터를 백엔드 DB로 넘겨주는 함수
+function handleSaveWorkout() {
+    // 1. 현재 화면(모달)에 찍혀있는 값과 배지 상태에서 운동 데이터 추출
+    const timeValue = document.getElementById('modal-time').innerText;
+    const countValue = parseInt(document.getElementById('modal-count').innerText, 10);
+    
+    const badgeText = document.getElementById('ui-mode-badge').innerText;
+    const currentMode = badgeText.includes('SQUAT') ? 'squat' : 'pullup';
+
+    const saveBtn = document.getElementById('btn-save-log');
+
+    // 2. 백엔드 /save_workout API로 비동기 POST 요청 전송
+    fetch('/save_workout', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            exercise_mode: currentMode,
+            total_count: countValue,
+            total_time: timeValue
         })
-        .catch(err => console.error(err));
+    })
+    .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.detail || "기록 저장 중 오류가 발생했습니다.");
+        }
+        return data;
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            alert(data.message);
+            
+            // 저장이 완료되면 버튼을 비활성화 상태로 바꾸어 중복 저장을 방지합니다.
+            saveBtn.innerText = "SAVED SUCCESSFULLY";
+            saveBtn.style.backgroundColor = "#3f3f46";
+            saveBtn.disabled = true;
+        }
+    })
+    .catch(err => {
+        alert("저장 실패: " + err.message);
+    });
+    }   
+
+    // 운동 종료 모달에서 세션 데이터를 보존한 상태로 단순히 창만 닫고 대시보드로 돌아가는 함수
+    function escapeReport() {
+    // 1. 성적표 모달창 은폐
+    document.getElementById('report-modal').style.display = 'none';
+
+    // 2. 타이머와 백엔드 분석 루프는 일시정지(Pause)된 상태를 온전히 유지합니다.
+    // 사용자는 대시보드 메인 화면을 보면서 다시 'RESUME SYSTEM' 버튼을 눌러 하던 운동을 이어서 재개할 수 있습니다.
+    console.log(">>> [System] 세션 리포트 모달 탈출 성공 - 현재까지의 운동 데이터가 보존되었습니다.");
     }
     </script>
+    
+    <div id="auth-modal" class="modal-overlay" style="display: flex;">
+        <div class="modal-content" style="width: 400px;">
+            <div class="modal-title" id="auth-title">SHARPEYES LOGIN</div>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 25px;">
+                <button id="tab-login" class="btn btn-mode" style="flex: 1; border-color: #f59e0b;" onclick="switchAuthTab('login')">LOGIN</button>
+                <button id="tab-register" class="btn btn-mode" style="flex: 1;" onclick="switchAuthTab('register')">REGISTER</button>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px; text-align: left;">
+                <div>
+                    <label class="card-label">USERNAME</label>
+                    <input type="text" id="auth-username" style="width: 100%; padding: 12px; background-color: #13131a; border: 1px solid #27272a; border-radius: 6px; color: white; box-sizing: border-box; margin-top: 5px;" placeholder="아이디를 입력하세요">
+                </div>
+                <div>
+                    <label class="card-label">PASSWORD</label>
+                    <input type="password" id="auth-password" style="width: 100%; padding: 12px; background-color: #13131a; border: 1px solid #27272a; border-radius: 6px; color: white; box-sizing: border-box; margin-top: 5px;" placeholder="비밀번호를 입력하세요">
+                </div>
+                <div id="register-confirm-zone" style="display: none;">
+                    <label class="card-label">CONFIRM PASSWORD</label>
+                    <input type="password" id="auth-password-confirm" style="width: 100%; padding: 12px; background-color: #13131a; border: 1px solid #27272a; border-radius: 6px; color: white; box-sizing: border-box; margin-top: 5px;" placeholder="비밀번호를 한번 더 입력하세요">
+                </div>
+            </div>
+
+            <button id="btn-auth-submit" class="btn-modal-close" style="background-color: #f59e0b;" onclick="handleAuthSubmit()">SIGN IN</button>
+        </div>
+    </div>
 </body>
 </html>

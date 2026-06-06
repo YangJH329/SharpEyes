@@ -226,3 +226,6 @@ outputs/processed/
 .vscode/
 .idea/
 .DS_Store
+
+# sharpeyes DB
+sharpeyes.db 
