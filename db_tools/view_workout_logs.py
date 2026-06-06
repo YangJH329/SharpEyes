@@ -26,14 +26,14 @@ def view_logs():
         """)
         rows = cursor.fetchall()
         
-        # 터미널에 줄 맞춰 출력하기 위한 가독성 헤더 설정
-        header = f"{'LOG ID':<8} | {'USERNAME':<12} | {'MODE':<10} | {'COUNT':<6} | {'TIME':<8} | {'TIMESTAMP':<20}"
+        # 터미널에 줄 맞춰 출력하기 위한 가독성 헤더 설정 
+        header = f"{'LOG ID':<6} | {'USERNAME':<12} | {'EXERCISE MODE':<15} | {'TOTAL COUNT':<12} | {'TOTAL TIME':<11} | {'TIMESTAMP':<20}"
         print(header)
         print("-" * len(header))
         
         # 각 행(Row) 반복 출력
         for row in rows:
-            print(f"{row[0]:<8} | {row[1]:<12} | {row[2].upper():<10} | {row[3]:<6} | {row[4]:<8} | {row[5]:<20}")
+            print(f"{row[0]:<6} | {row[1]:<12} | {row[2].upper():<15} | {row[3]:<12} | {row[4]:<11} | {row[5]:<20}")
             
         if not rows:
             print("아직 저장된 운동 기록이 없습니다.")
