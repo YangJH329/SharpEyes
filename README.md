@@ -21,6 +21,43 @@
 * **Environment**: Python Virtual Environment (venv)
 * **Framework**: FastAPI
 ---
+## 시작하기 (How to run)
+
+이 프로젝트를 로컬 컴퓨터에 설치하고 실행하는 방법
+
+### 1. 가상환경 생성 및 활성화
+프로젝트 루트 폴더에서 파이썬 가상환경 생성, 활성화합니다.
+
+```bash
+# 가상환경 생성 (venv라는 이름으로 생성)
+python -m venv venv
+
+# 가상환경 활성화 (Windows)
+.\venv\Scripts\activate
+
+# 가상환경 활성화 (Mac/Linux)
+source venv/bin/activate
+```
+
+### 2. 관련 모듈 설치
+프로젝트에 필요한 파이썬 패키지를 일괄 설치합니다.
+```bash
+pip install -r requirements.txt
+```
+
+### 3. 데이터베이스 초기화 (SQLite3)
+회원가입 및 데이터 기록을 위한 SQLite 데이터베이스 테이블을 최초 1회 생성합니다.
+```bash
+python db_tools/init_db.py
+```
+
+### 4. FastAPI 서버 실행
+```bash
+uvicorn main:app --reload
+```
+- 서버가 켜지면 `http://127.0.0.1:8000` 로 접속할 수 있습니다.
+
+---
 
 ##  핵심 로직 (Core Logic)
 

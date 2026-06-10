@@ -229,3 +229,4 @@ outputs/processed/
 
 # sharpeyes DB
 sharpeyes.db 
+.db

@@ -1,10 +1,24 @@
 import sqlite3
+import os
 
 def init_database():
+    # 1. 현재 실행 중인 init_db.py 파일의 절대 경로를 찾습니다.
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # 2. 한 단계 위 폴더 경로를 계산합니다.
+    root_dir = os.path.dirname(current_dir)
+
+    # 3. 최상단 폴더 안에 sharpeyes.db가 생성되도록 절대 경로를 안전하게 결합합니다.
+    db_path = os.path.join(root_dir, "sharpeyes.db")
+
     # 프로젝트 폴더 내에 sharpeyes.db 파일을 생성하고 연결합니다.
     # 파일이 이미 존재하면 연결만 하고, 없으면 새로 생성합니다.
-    conn = sqlite3.connect("sharpeyes.db")
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
+
+    # SQLite3에서 외래키 제약조건을 강제로 활성화하는 명령어 
+    cursor.execute("PRAGMA foreign_keys = ON;")
+
 
     # 1. 사용자 정보가 담길 users 테이블을 생성합니다.
     # id: 고유 식별 번호 (자동으로 1씩 증가)
