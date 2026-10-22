@@ -55,7 +55,7 @@ python db_tools/init_db.py
 ```bash
 uvicorn main:app --reload
 ```
-- 서버가 켜지면 `http://127.0.0.1:8000` 로 접속할 수 있습니다.
+- 서버가 켜지면 `http://127.0.0.1:8000` 혹은 `http://localhost:8000` 으로 접속할 수 있습니다.
 
 ---
 
